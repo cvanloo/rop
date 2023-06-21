@@ -121,6 +121,141 @@ A more correct version would be:
 scanf("11%[^\n]", pass);
 ```
 
+## How the Stack Works
+
+Every function has its own space on the stack where it can store local
+variables, called the function's *stack frame*.
+$RBP is the base pointer, pointing to the start of the current stack frame,
+whereas $RSP -- the stack pointer -- points to the *top* of the stack.
+To access a variable, we can use an offset from either the $RBP or the $RSP.
+
+Before we can store something onto the stack we need to make space for it, by
+advancing the the top of the stack $RSP.
+The stack grows downwards, from high memory addresses into lower addresses,
+meaning that the top of the stack is lower than $RBP.
+To reserve space on the stack, we subtract from $RSP (not add!).
+
+Every function has to set up its frame by itself (prologue) and must restore
+the previous function's stack frame before returning (epilogue).
+
+When a function is called, the address of where execution has to continue
+after the called function finished executing (the return address) is pushed
+onto the stack.
+
+<details>
+
+<summary>A more detailed explanation with graphics (and terrible handwriting)</summary>
+
+![How the Stack Works](How-The-Stack-Works.png)
+
+</details>
+
+<details>
+
+<summary>Disassembly of the Main Function</summary>
+
+## Disassembly of the Main Function
+
+Compiled using Clang Version 10.0.0.
+
+```sh
+clang --version
+# clang version 10.0.0-4ubuntu1
+```
+
+```
+; *** Output taken from objdump and cleaned up ***
+main:
+  ; Prologue:
+  ; Setup the stack frame:
+  ;   - save the previous function's base pointer on the stack
+  ;   - set our base to the top of the previous function's frame
+  push   rbp
+  mov    rbp,rsp
+
+  ; make space for the input buffer, note that the compiler (clang) decided to
+  ; allocate 48 bytes instead of the 12 bytes we coded.
+  ; Some of those bytes are also for argc and argv, Clang cleverly allocates
+  ; all locals at once.
+  sub    rsp,0x30
+
+  ; apparently a more efficient way to say `mov eax, 0`
+  xor    eax,eax
+
+  ; I'm guessing EDI and RSI are argc and argv respectively.
+  mov    DWORD PTR [rbp-0x4],0x0
+  mov    DWORD PTR [rbp-0x8],edi
+  mov    QWORD PTR [rbp-0x10],rsi
+
+  ; Our input buffer is located on the stack at offset 0x1C from the base pointer.
+  ; The previous value on the stack is at 0x10, calculating 0x1C - 0x10 gives
+  ; us the correct buffer size of 12 bytes!
+  lea    rcx,[rbp-0x1c]
+
+  ; calling memset to zero the buffer
+  mov    rdi,rcx                   ; buffer address
+  mov    esi,eax                   ; the number 0
+  mov    edx,0xc                   ; size of the buffer 12
+  call   401060 <memset@plt>
+
+  ; printf call: "What is the secret message?\n"
+  movabs rdi,0x402013              ; adddress of string to print,
+                                   ; `(gdb) x/s 0x402013` tells the string contents
+  mov    al,0x0
+  call   401050 <printf@plt>
+
+  ; scanf call
+  lea    rsi,[rbp-0x1c]            ; buffer to scan into
+  movabs rdi,0x40202f              ; `(gdb) x/s 0x40202f` = "%[^\n]"
+  mov    DWORD PTR [rbp-0x20],eax  ; godbolt remarks this with "4-byte spill"
+  mov    al,0x0
+  call   4010c0 <__isoc99_scanf@plt>
+
+  ; compare the input against the passphrase
+  lea    rsi,[rbp-0x1c]            ; our buffer once again
+  movabs rdi,0x402035              ; "bed bananas" the secret passphrase
+  mov    edx,0xc                   ; buffer size 12
+  mov    DWORD PTR [rbp-0x24],eax  ; godbolt remarks this with "4-byte spill"
+  call   401030 <strncmp@plt>
+
+  ; compare strcmp result against 0
+  xor    r8d,r8d
+  c0                cmp    r8d,eax
+
+  jne    401315 <main+0x85>        ; incorrect passphrase: jump to incorrect
+
+  call   4011c0 <win>              ; correct passphrase: call win,
+  jmp    40132a <main+0x9a>        ;   then go to exit
+
+incorrect:
+  lea    rsi,[rbp-0x1c]            ; buffer
+  movabs rdi,0x402041              ; "The secret phrase is not: %s\n"
+  mov    al,0x0
+  call   401050 <printf@plt>
+
+exit:
+  ; set exit code (0 - Success)
+  xor    eax,eax
+
+  ; Epilogue:
+  ;   - Reset the stack pointer to its initial position
+  ;   - Restore the old RBP value back into RBP
+  40132c:       48 83 c4 30             add    rsp,0x30
+  401330:       5d                      pop    rbp
+
+  ; Read return address from stack and continue executing there.
+  401331:       c3                      ret
+```
+
+The two register spills save the value of $EAX onto the stack, presumably
+because the register will be overwritten by the subsequent function calls
+(and there are no other registers available).
+However, we never read those values back.
+Compiling with `-O3` removes much of the unnecessary instructions, as well as
+not needed variables like `argc` and `argv`.
+
+</details>
+
 ## Stack Canaries
 
 GCC with its default options puts some sort of security check in place.
@@ -139,6 +274,8 @@ sudo dmesg
 ```
 
 So let's compile with `clang` instead.
+
+> Another options would have been to compile using `-fno-stack-protector`.
 
 ## Locating the Return Address
 
@@ -177,13 +314,9 @@ echo AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCDEFG | ./a.out
 Note the 0x47 (G), 0x46 (F), 0x45 (E), ... -- our payload will end up in
 reverse order!
 
-<details>
-<summary>Tips & Tricks</summary>
-
-Another way is to generate a random string with no repeating patterns.
-Then just match the pattern from the $IP against your input string to find
-the exact position.
-</details>
+> Another way is to generate a random string with no repeating patterns.
+> Then just match the pattern from the $IP against your input string to find
+> the exact position.
 
 ## Address of the Win Function
 
@@ -224,8 +357,8 @@ python2 -c 'print("A" * 36 + "\xc0\x11\x40\x00\x00\x00\x00\x00")'
 
 Note that we had to convert the endianness to match that of our CPU.
 
-We use Python 2 because Python 3 makes it us very hard to output an ASCII
-string with invalid bytes.
+We use Python 2 because Python 3 makes it very hard to output an ASCII string
+containing invalid bytes.
 
 ## Ready, Set, Exploit!
 
