@@ -442,4 +442,5 @@ Or perhaps something more Lispy?
 
 ## More Challenges
 
-I solved the first challenge from the ROPEmporium [here](ret2win.md).
+- I solved the first challenge from the ROPEmporium [here](ret2win.md).
+- ROPEmporium split [here](split.md).
