@@ -240,11 +240,11 @@ exit:
   ; Epilogue:
   ;   - Reset the stack pointer to its initial position
   ;   - Restore the old RBP value back into RBP
-  40132c:       48 83 c4 30             add    rsp,0x30
-  401330:       5d                      pop    rbp
+  add    rsp,0x30
+  pop    rbp
 
   ; Read return address from stack and continue executing there.
-  401331:       c3                      ret
+  ret
 ```
 
 The two register spills save the value of $EAX onto the stack, presumably
