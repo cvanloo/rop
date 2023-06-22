@@ -71,6 +71,23 @@ r2 split
 # 0x004007c4                 c3  ret
 ```
 
+<details>
+<summary>Where is this instruction coming from?</summary>
+
+Looking at the disassembly in radare2 or objdump, we won't be able to find any such
+instruction `pop rdi` followed by `ret`.
+
+In fact, we are jumping into the *middle* of an instruction:
+
+```
+0x004007c2       41 5f    pop r15
+0x004007c4       c3       ret
+```
+
+We skip the first byte `41` at `c2` and jump directly to `5f` at `c3`!
+Incidentally, `5f` is machine code for `pop rdi` (in AMD64).
+</details>
+
 So we overwrite the stack in a way that `pwnme` will return to `0x004007c3`
 and then pop the address of "/bin/cat flag.txt" string into RDI.
 Next, the `ret` has to return to `0x0040074b` (taken from the disassembly)
