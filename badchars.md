@@ -20,6 +20,10 @@ The actual amount of bytes read is stored on the stack and later used to
 iterate over the input char by char.
 
 ```
+r2 libbadchars.so
+aa
+afl
+pdf @0x000008fa # sym.pwnme
 │           0x0000098c      488945c0       mov qword [var_40h], rax
 │           0x00000990      48c745c80000.  mov qword [var_38h], 0
 │       ┌─< 0x00000998      eb51           jmp 0x9eb
