@@ -442,7 +442,8 @@ Or perhaps something more Lispy?
 
 ## More Challenges
 
-- ROPEmporium [ret2win](ret2win.md).
-- ROPEmporium [split](split.md).
-- ROPEmporium [callme](callme.md).
+- ROPEmporium [ret2win](ret2win.md)
+- ROPEmporium [split](split.md)
+- ROPEmporium [callme](callme.md)
 - ROPEmporium [write4](write4.md)
+- ROPEmporium [badchars](badchars.md)
