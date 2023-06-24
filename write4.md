@@ -20,7 +20,7 @@ checksec --file=write4
 checksec --file=libwrite4.so
 
 rabin2 -z write4
-readelf write4
+readelf -a write4
 
 objdump -d write4
 objdump -d libwrite4.so
