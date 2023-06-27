@@ -46,7 +46,7 @@ memory it is loaded) to obtain the address where libc starts in our processes
 memory.
 
 ```python
-libc.address = leaked_addr - libc.symbols["puts"] # calculate libc base: base = current_process_puts - offset_of_puts_from_base
+libc.address = leaked_addr - libc.symbols["puts"]
 ```
 
 Finally, we can do our search for the `/bin/sh` string and the `system()`
