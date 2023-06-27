@@ -127,13 +127,6 @@ print(p.clean())
 p.sendline(payload)
 print(p.clean())
 p.interactive()
-
-# with open("payload.txt", "wb") as f:
-#     f.write(payload)
-
-#p = process("./callme")
-#p.send(payload)
-#p.interactive()
 ```
 
 I created most of this with some help from this great
