@@ -5,6 +5,7 @@ however we can find them at runtime, once `libc` has been loaded.
 
 ```
 gdb ./callme
+start
 
 find "/bin/sh"
 # Searching for '/bin/sh' in: None ranges
