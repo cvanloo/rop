@@ -63,7 +63,7 @@ However, the application crashes in `do_system()`, at a `movaps` instruction.
 As we've learned in the previous challenges, a simple fix is to include
 another `ret` instruction.
 
-```
+```python
 payload = offset + p64(pop_rdi) + p64(bin_sh) + p64(ret) + p64(system)
 ```
 
