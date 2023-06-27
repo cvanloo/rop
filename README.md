@@ -447,3 +447,4 @@ Or perhaps something more Lispy?
 - ROPEmporium [callme](callme.md)
 - ROPEmporium [write4](write4.md)
 - ROPEmporium [badchars](badchars.md)
+- ROPEmporium [callme shell](callme_shell.md)
