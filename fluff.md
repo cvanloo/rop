@@ -198,7 +198,7 @@ CURRENT_AL = 0xB
 
 def set_rbx(val):
     bextr = 0x0040062a
-    cntl = 0x4000 # copy all bytes (start at the 0th bit and copy up to 8 bits)
+    cntl = 0x4000 # copy all bytes (start at the 0th bit and copy up to 64 bits)
     src =  val - 0x3ef2
     # takes care of negative numbers
     rbx_str = p64(src) if src >= 0 else p64(struct.unpack('<Q', struct.pack('<q', src))[0])
