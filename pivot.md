@@ -34,6 +34,7 @@ hello, world # first read onto heap, type in some stuff
 pattern create 200
 c
 # copy-paste pattern as input to second read
+# Segmentation fault
 x/x $rsp
 # 0x4141464141304141
 pattern offset 0x4141464141304141
