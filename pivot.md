@@ -72,7 +72,7 @@ But just how does this PLT business work?
 ```
 
 The first `jmp` instruction points to an entry in the `.got.plt` section.
-At first, this entry points right back to the `pushq` instruction on the next
+At first, this entry points right back to the `push` instruction on the next
 line.
 
 ![GDB shows us that the jmp instruction resolves back to the next line, the push instruction.](pivot-foothold-before-call.png)
