@@ -90,7 +90,7 @@ In all future calls the `jmp` will directly go to the right address.
 ![In GDB we can now see that the function pointer has been updated, pointing to the resolved address.](pivot-foothold-after-call.png)
 
 Using pwntools we obtain the pointer into the `.got.plt` section using
-`elf.got['function_name']`.
+`elf.got['foothold_function']`.
 
 We can also list the different sections with `readelf -S pivot` and specifically
 the contents of the `.got.plt` section by using `readelf -r pivot`.
@@ -98,7 +98,7 @@ the contents of the `.got.plt` section by using `readelf -r pivot`.
 ```
 Relocation section '.rela.plt' at offset 0x5c8 contains 9 entries:
   Offset          Info           Type           Sym. Value    Sym. Name + Addend
-000000601040  000800000007 R_X86_64_JUMP_SLO 0000000000000000 function_name + 0
+000000601040  000800000007 R_X86_64_JUMP_SLO 0000000000000000 foothold_function + 0
 # this ----^
 # ... SNIP: other entries ..
 ```
