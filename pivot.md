@@ -237,6 +237,19 @@ libelf.address = leaked_foothold_got - libelf.sym['foothold_function']
 info('FOUND FOOTHOLD BASE @ %s' % hex(libelf.address))
 ```
 
+The disassembly of `foothold_function` for reference, placed at offset 0x096a:
+
+```
+000000000000096a <foothold_function>:
+ 96a:   55                      push   %rbp
+ 96b:   48 89 e5                mov    %rsp,%rbp
+ 96e:   48 8d 3d ab 01 00 00    lea    0x1ab(%rip),%rdi        # b20 <_fini+0xc>
+ 975:   e8 b6 fe ff ff          callq  830 <puts@plt>
+ 97a:   90                      nop
+ 97b:   5d                      pop    %rbp
+ 97c:   c3                      retq
+```
+
 On the second run from `main` we just input dummy text into the heap, this
 time our payload is small enough to fit on the stack.
 Now that we know the real addresses of any of the library's functions, we can
