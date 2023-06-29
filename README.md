@@ -450,6 +450,7 @@ Or perhaps something more Lispy?
 - ROPEmporium [callme shell](callme_shell.md)
 - ROPEmporium [fluff](fluff.md)
 - ROPEmporium [pivot](pivot.md)
+- ROPEmporium [ret2csu](ret2csu.md)
 
 ---
 
