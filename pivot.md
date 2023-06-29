@@ -90,7 +90,7 @@ In all future calls the `jmp` will directly go to the right address.
 ![In GDB we can now see that the function pointer has been updated, pointing to the resolved address.](pivot-foothold-after-call.png)
 
 Using pwntools we obtain the pointer into the `.got.plt` section using
-`elf.got['foothold_function']`.
+`foothold_got = elf.got['foothold_function']`.
 
 We can also list the different sections with `readelf -S pivot` and specifically
 the contents of the `.got.plt` section by using `readelf -r pivot`.
@@ -101,6 +101,15 @@ Relocation section '.rela.plt' at offset 0x5c8 contains 9 entries:
 000000601040  000800000007 R_X86_64_JUMP_SLO 0000000000000000 foothold_function + 0
 # this ----^
 # ... SNIP: other entries ..
+```
+
+`puts` prints out a null-terminated string found at the address pointed to by its only
+argument ($rdi).
+In other words, if we give `puts` the pointer into the `.got.plt`, it will dereference
+it and print out the function address stored there.
+
+```python
+payload += p64(pop_rdi) + p64(foothold_got) + p64(puts_plt)
 ```
 
 [This blog](https://systemoverlord.com/2017/03/19/got-and-plt-for-pwning.html)
