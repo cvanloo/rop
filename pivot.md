@@ -189,7 +189,7 @@ The `foothold_function` is imported into our binary, therefore there is a
 ```
 
 We resolve `foothold_function` and then leak its address.
-This done with a little detour over an extra `ret` (otherwise a `movaps`
+This done, with a little detour over an extra `ret` (otherwise a `movaps`
 instruction within `buffered_vfprintf()` would crash our process due to our
 messing with the stack making it unaligned) we go back to `main`.
 
