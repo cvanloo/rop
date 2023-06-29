@@ -522,3 +522,6 @@ p.interactive()
 ```
 
 </details>
+
+I like this solution more than the first one, since it doesn't involve any leaking of
+values, besides the heap address (which you could probably also do without).
