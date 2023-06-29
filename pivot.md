@@ -79,8 +79,8 @@ line.
 
 An offset identifying the function to be resolved is pushed onto the stack,
 then the dynamic loader is called to resolve the function's address for us.
-This loader overwrites the pointer in the `.got.plt` section with the resolved
-address.
+The loader updates the pointer in the `.got.plt` section so that it points
+to the functions correct address, which is stored in the `.got` section.
 
 In all future calls the `jmp` will directly go to the right address.
 
