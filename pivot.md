@@ -78,13 +78,15 @@ line.
 ![GDB shows us that the jmp instruction resolves back to the next line, the push instruction.](pivot-foothold-before-call.png)
 
 An offset identifying the function to be resolved is pushed onto the stack,
-then the dynamic loader is called to resolve the functions address for us.
+then the dynamic loader is called to resolve the function's address for us.
 This loader overwrites the pointer in the `.got.plt` section with the resolved
 address.
 
 In all future calls the `jmp` will directly go to the right address.
 
 ![In GDB we can now see that the function pointer has been updated, pointing to the resolved address.](pivot-foothold-after-call.png)
+
+[This blog](https://systemoverlord.com/2017/03/19/got-and-plt-for-pwning.html) provides a more detailed explanation.
 
 We use the `pwntools` library to create an exploit script.
 
