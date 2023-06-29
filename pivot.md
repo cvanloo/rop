@@ -87,7 +87,7 @@ In all future calls the `jmp` will directly go to the right address.
 
 ![In GDB we can now see that the function pointer has been updated, pointing to the resolved address.](pivot-foothold-after-call.png)
 
-Using pwntools we read the pointer into the `.got.plt` section using
+Using pwntools we obtain the pointer into the `.got.plt` section using
 `elf.got['function_name']`.
 
 We can also list the different sections with `readelf -S pivot` and specifically
