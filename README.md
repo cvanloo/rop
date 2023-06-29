@@ -450,3 +450,30 @@ Or perhaps something more Lispy?
 - ROPEmporium [callme shell](callme_shell.md)
 - ROPEmporium [fluff](fluff.md)
 - ROPEmporium [pivot](pivot.md)
+
+---
+
+## Additional Info
+
+To use `pwntools` together with `gdb` and any terminal of your choice (in this
+example `kitty`):
+
+```python
+# the arguments to start your terminal with a command
+# some terminal need an option like -c or -e
+# context.terminal = ['my-fav-term', '-e']
+# kitty takes the command directly, without a switch:
+context.terminal = ['kitty']
+
+process_name = './my-exe'
+
+DEBUG_ARGS = '''
+set disable-randomization off
+b *pwnme+182
+'''
+
+p = gdb.debug(process_name, DEBUG_ARGS, env={})
+```
+
+The `env={}` is quite important, on some systems the script would hang at
+starting up `gdbserver` indefinitely without it.
