@@ -174,6 +174,10 @@ p.sendline(stack_payload)
 After popping the leaked heap address into $rsp, the next value will be popped
 from our heap memory, so we write the rest of our ROP-chain there:
 
+```python
+heap_payload  = p64(0x13) + p64(0x14) + p64(0x15)                # dummy values
+```
+
 The `foothold_function` is imported into our binary, therefore there is a
 `.plt` entry:
 
