@@ -62,6 +62,8 @@ The ROPEmporium suggests a few different approaches.
 - `ret2win`'s real address must then be `foothold_function@got.plt - 0x096a +
   0x0a81`.
 
+---
+
 But just how does this PLT business work?
 
 ```
@@ -103,6 +105,8 @@ Relocation section '.rela.plt' at offset 0x5c8 contains 9 entries:
 
 [This blog](https://systemoverlord.com/2017/03/19/got-and-plt-for-pwning.html)
 provides a more detailed explanation.
+
+---
 
 We use the `pwntools` library to create an exploit script.
 
