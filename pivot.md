@@ -154,7 +154,7 @@ much bigger area under our control.
 We find a gadget to `pop rsp`:
 
 ```python
-pop_rsp = rop.find_gadget(['pop rsp'])[0]
+pop_rsp = rop.find_gadget(['pop rsp'])
 # Gadget(0x400a2d, ['pop rsp', 'pop r13', 'pop r14', 'pop r15', 'ret'], ['rsp', 'r13', 'r14', 'r15'], 0x28)
 ```
 
