@@ -77,8 +77,9 @@ line.
 
 ![GDB shows us that the jmp instruction resolves back to the next line, the push instruction.](pivot-foothold-before-call.png)
 
-An offset identifying the function to be resolved is pushed onto the stack,
-then the dynamic loader is called to resolve the function's address for us.
+An offset identifying the function to be resolved is pushed onto the stack
+(`pushq  $0x5`), then the dynamic loader is called (`jmpq   4006c0 <.plt>`)
+to resolve the function's address for us.
 The loader updates the pointer in the `.got.plt` section so that it points
 to the function's resolved address.
 
