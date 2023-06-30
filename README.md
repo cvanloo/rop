@@ -456,6 +456,8 @@ Or perhaps something more Lispy?
 
 ## Additional Info
 
+### Pwntools: Find RIP Offset
+
 To use `pwntools` together with `gdb` and any terminal of your choice (in this
 example `kitty`):
 
@@ -478,3 +480,44 @@ p = gdb.debug(process_name, DEBUG_ARGS, env={})
 
 The `env={}` is quite important, on some systems the script would hang at
 starting up `gdbserver` indefinitely without it.
+
+### Find a Pointer
+
+Call instructions like `call *(%r12,%rbx,8)` calculate an address `r12+(rbx*8)`,
+dereference it, and jump to whatever address the dereferenced value points to.
+
+This means, if we want to call an address like `0x00400528`, we have to pass
+`call` another address that points to a value `0x00400528`.
+
+Maybe we can use some sort of write gadget to write the address into memory,
+but this might not always be possible.
+
+An app runs in a large grab-bag of memory, so maybe we can locate some already
+existing pointer -- some memory address at which the specific bytes
+`0x00400528` are already stored?
+
+Using `gdb-peda` we can run a simple `find`:
+
+```
+gdb ./app-to-debug
+start
+find 0x00400528
+```
+
+![gdb-peda's search results: PEDA found two such pointers](find-address-peda.png)
+
+When using vanilla GDB:
+
+```
+gdb ./app-to-debug
+start
+info proc mappings
+# search in all of the application's code ranges (.text, etc.)
+find /b 0x400000,0x401000,0x00400528
+find /b 0x600000,0x601000,0x00400528
+# verify search results (they won't all be correct)
+x 0x6009ba # incorrect
+x 0x600e38 # correct
+```
+
+![gdb's search results: 4 pointers found, only one is correct.](find-address-gdb.png)
